@@ -1,0 +1,7 @@
+{
+  "name": "Business Analyst AI",
+  "description": "A mobile-first AI assistant to help analyze, summarize, and refine business models using Natural Language Processing.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
