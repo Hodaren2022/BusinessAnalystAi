@@ -8,7 +8,13 @@ const getAIClient = (apiKey?: string) => {
     const effectiveKey = apiKey || import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
     
     if (!effectiveKey) {
-        throw new Error("No API key provided. Please set GEMINI_API_KEY in .env.local or provide a custom key.");
+        console.error("❌ No API key found. Available env vars:", {
+            viteKey: !!import.meta.env.VITE_GEMINI_API_KEY,
+            nodeKey: !!process.env.GEMINI_API_KEY,
+            viteEnv: Object.keys(import.meta.env).filter(k => k.includes('GEMINI')),
+            nodeEnv: Object.keys(process.env).filter(k => k.includes('GEMINI'))
+        });
+        throw new Error("No API key provided. Please set VITE_GEMINI_API_KEY in Netlify Environment Variables or provide a custom key.");
     }
     
     console.log("🔵 Initializing Gemini Client");
