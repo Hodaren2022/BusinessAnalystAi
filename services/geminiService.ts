@@ -17,7 +17,7 @@ const getAIClient = (apiKey?: string) => {
         throw new Error("No API key provided. Please set VITE_GEMINI_API_KEY in Netlify Environment Variables or provide a custom key.");
     }
     
-    console.log("🔵 Initializing Gemini Client");
+    // console.log("🔵 Initializing Gemini Client");
     return new GoogleGenAI({ apiKey: effectiveKey });
 };
 

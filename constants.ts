@@ -32,5 +32,5 @@ export const GEMINI_MODELS = [
   { id: 'gemini-3-pro-preview', name: 'Gemini Pro (Complex)' },
 ];
 
-// The User requested this to be the ONLY key.
-export const FALLBACK_API_KEY = "AIzaSyAUHP82uV93_Zok_4F5QVDSv-PsTWkahOU";
+// Fallback API key for local testing only - not for production
+export const FALLBACK_API_KEY = process.env.NODE_ENV === 'development' ? "AIzaSyAUHP82uV93_Zok_4F5QVDSv-PsTWkahOU" : undefined;

@@ -115,11 +115,11 @@ export const AnalysisHub: React.FC = () => {
     // Check for API Key selection for VEO
     // ONLY check if we are NOT using a custom API Key.
     // If user provided a custom key, we skip the AI Studio environment check/enforcement.
-    if (!settings.customApiKey && window.aistudio && window.aistudio.hasSelectedApiKey) {
-       const hasKey = await window.aistudio.hasSelectedApiKey();
+    if (!settings.customApiKey && (window as any).aistudio && (window as any).aistudio.hasSelectedApiKey) {
+       const hasKey = await (window as any).aistudio.hasSelectedApiKey();
        if (!hasKey) {
          try {
-            await window.aistudio.openSelectKey();
+            await (window as any).aistudio.openSelectKey();
          } catch (e) {
             console.error("Key selection cancelled or failed", e);
             return;
