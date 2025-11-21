@@ -58,9 +58,24 @@ export const ChatView: React.FC = () => {
     return () => unsubscribe();
   }, [projectId]);
 
-  // Auto scroll
+  // Auto scroll - only scroll when user sends a message or is near bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const messagesContainer = messagesEndRef.current?.parentElement?.parentElement;
+    if (!messagesContainer) return;
+    
+    const isNearBottom = messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - 150;
+    
+    // Get the last message to check if it's from user
+    const lastMessage = messages[messages.length - 1];
+    const isUserMessage = lastMessage?.role === 'user';
+    
+    // Only auto-scroll in these cases:
+    // 1. User just sent a message (always scroll)
+    // 2. User is already near bottom (continue following conversation)
+    // 3. AI starts typing AND user is near bottom
+    if (isUserMessage || isNearBottom || (isTyping && isNearBottom)) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isTyping, previewUrl]);
 
   const togglePerspective = async () => {
@@ -259,6 +274,7 @@ export const ChatView: React.FC = () => {
           uploadFile(currentFile, projectId)
              .then(async (url) => {
                  if (url) {
+                     console.log("File uploaded successfully, updating message with attachment");
                      await updateMessage(projectId, userMessageId, {
                          attachment: {
                              url,
@@ -267,14 +283,26 @@ export const ChatView: React.FC = () => {
                              mimeType: currentFile.type
                          }
                      });
+                     console.log("Message updated with attachment URL");
                  }
                  setIsUploading(false);
              })
              .catch((err) => {
-                 console.warn("Background upload failed, but analysis continues.", err);
+                 console.error("File upload failed:", err);
                  setIsUploading(false);
+                 
+                 // Show more specific error message
+                 let errorMessage = "(Upload Failed - Local Preview)";
+                 if (err.message?.includes("Authentication required")) {
+                     errorMessage = "(Upload Failed - Authentication Error)";
+                 } else if (err.message?.includes("timeout")) {
+                     errorMessage = "(Upload Failed - Timeout)";
+                 } else if (err.message?.includes("storage")) {
+                     errorMessage = "(Upload Failed - Storage Error)";
+                 }
+                 
                  updateMessage(projectId, userMessageId, {
-                     content: userText + "\n\n(Upload Failed - Local Preview)"
+                     content: userText + "\n\n" + errorMessage
                  });
              });
       }

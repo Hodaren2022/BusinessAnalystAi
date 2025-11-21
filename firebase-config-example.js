@@ -1,4 +1,4 @@
-
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
@@ -19,6 +19,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Initialize services
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const auth = getAuth(app);
@@ -29,7 +30,7 @@ signInAnonymously(auth)
   .then(() => {
     console.log("Anonymous authentication successful");
   })
-  .catch((error: any) => {
+  .catch((error) => {
     if (error.code === 'auth/configuration-not-found') {
         console.warn("Firebase Anonymous Auth is not enabled in the Console. Uploads will be skipped.");
     } else {
@@ -38,9 +39,9 @@ signInAnonymously(auth)
   });
 
 // Enable offline persistence
-enableIndexedDbPersistence(db).catch((err: any) => {
+enableIndexedDbPersistence(db).catch((err) => {
     if (err.code === 'failed-precondition') {
-        console.warn('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
+        console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
     } else if (err.code === 'unimplemented') {
         console.warn('The current browser does not support all of the features required to enable persistence');
     }

@@ -25,13 +25,17 @@ export const auth = getAuth(app);
 export const analytics = getAnalytics(app);
 
 // Sign in anonymously to allow Storage uploads
-signInAnonymously(auth).catch((error: any) => {
-  if (error.code === 'auth/configuration-not-found') {
-      console.warn("Firebase Anonymous Auth is not enabled in the Console. Uploads will be skipped.");
-  } else {
-      console.error("Anonymous Auth Failed:", error);
-  }
-});
+signInAnonymously(auth)
+  .then(() => {
+    console.log("Anonymous authentication successful");
+  })
+  .catch((error: any) => {
+    if (error.code === 'auth/configuration-not-found') {
+        console.warn("Firebase Anonymous Auth is not enabled in the Console. Uploads will be skipped.");
+    } else {
+        console.error("Anonymous Auth Failed:", error);
+    }
+  });
 
 // Enable offline persistence
 enableIndexedDbPersistence(db).catch((err: any) => {

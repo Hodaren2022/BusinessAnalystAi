@@ -103,29 +103,44 @@ export const getProjectById = async (projectId: string): Promise<Project | null>
 };
 
 export const uploadFile = async (file: File, projectId: string): Promise<string> => {
-  // TIMEOUT WRAPPER: If upload takes > 5s, abort it.
-  // This prevents the app from hanging if Auth is missing or network is blocked.
-  const uploadPromise = async () => {
-      // Wait for Auth to be ready (max 1s)
-      if (!auth.currentUser) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+  try {
+    // Wait for Auth to be ready (max 3s)
+    let attempts = 0;
+    while (!auth.currentUser && attempts < 30) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (!auth.currentUser) {
+      console.error("No authenticated user for file upload");
+      throw new Error("Authentication required for file upload");
+    }
+    
+    console.log("Starting file upload:", file.name, "Size:", file.size);
+    
+    const timestamp = Date.now();
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const storagePath = `projects/${projectId}/uploads/${timestamp}_${sanitizedFileName}`;
+    const storageRef = ref(storage, storagePath);
+    
+    const metadata = { 
+      contentType: file.type,
+      customMetadata: {
+        originalName: file.name,
+        uploadedAt: new Date().toISOString()
       }
-      
-      const timestamp = Date.now();
-      const storagePath = `projects/${projectId}/uploads/${timestamp}_${file.name}`;
-      const storageRef = ref(storage, storagePath);
-      
-      const metadata = { contentType: file.type };
-      
-      await uploadBytes(storageRef, file, metadata);
-      return await getDownloadURL(storageRef);
-  };
-
-  // Race against a timeout
-  return Promise.race([
-      uploadPromise(),
-      new Promise<string>((_, reject) => 
-          setTimeout(() => reject(new Error("Upload timeout")), 5000)
-      )
-  ]);
+    };
+    
+    console.log("Uploading to path:", storagePath);
+    const uploadResult = await uploadBytes(storageRef, file, metadata);
+    console.log("Upload successful, getting download URL...");
+    
+    const downloadURL = await getDownloadURL(uploadResult.ref);
+    console.log("Download URL obtained:", downloadURL);
+    
+    return downloadURL;
+  } catch (error) {
+    console.error("File upload failed:", error);
+    throw error;
+  }
 };

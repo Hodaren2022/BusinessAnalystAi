@@ -3,33 +3,29 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Message, ProjectData, UserRole, AnalysisPerspective, AppSettings } from "../types";
 import { DEFAULT_SYSTEM_INSTRUCTION } from "../constants";
 
-// --- CRITICAL CONFIGURATION ---
-// The user has explicitly requested this to be the UNIQUE and ONLY key used.
-// It overrides all settings, fallbacks, and environment variables.
-const MASTER_API_KEY = "AIzaSyAUHP82uV93_Zok_4F5QVDSv-PsTWkahOU";
-
-const getAIClient = () => {
-    // Always initialize with the MASTER_API_KEY
-    console.log("🔵 Initializing Gemini Client with MASTER KEY:", MASTER_API_KEY);
-    return new GoogleGenAI({ apiKey: MASTER_API_KEY });
+const getAIClient = (apiKey?: string) => {
+    // Use provided key or fallback to environment variable
+    const effectiveKey = apiKey || import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    
+    if (!effectiveKey) {
+        throw new Error("No API key provided. Please set GEMINI_API_KEY in .env.local or provide a custom key.");
+    }
+    
+    console.log("🔵 Initializing Gemini Client");
+    return new GoogleGenAI({ apiKey: effectiveKey });
 };
 
 export const validateApiKey = async (apiKey: string): Promise<boolean> => {
-    // Even if testing a specific key input, we default to checking the master key connection 
-    // if the context implies we should be valid. 
-    // However, usually 'validateApiKey' checks a specific input string.
-    // To be safe and consistent with "This is the ONLY key", we verify the Master Key connectivity.
-    
     try {
-        const ai = getAIClient();
+        const ai = getAIClient(apiKey);
         await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: { parts: [{ text: "Test connection" }] }
         });
         return true;
     } catch (error) {
-        console.error("Master API Key Validation Failed:", error);
-        throw error;
+        console.error("API Key validation failed:", error);
+        return false;
     }
 };
 
@@ -50,8 +46,7 @@ export const generateResponse = async (
   options?: AIResponseOptions
 ): Promise<string> => {
   
-  // Initialize AI with the Master Key
-  const ai = getAIClient();
+  const ai = getAIClient(settings.customApiKey);
   
   // FIX: Gemini API throws error if 'text' is empty string. Default to single space if content is missing.
   const historyContent = history.map(msg => ({
@@ -121,11 +116,11 @@ export const analyzeProjectData = async (
   conversationText: string,
   currentData: ProjectData,
   attachment?: { base64: string; mimeType: string },
-  customApiKey?: string // Argument ignored to enforce Master Key
+  customApiKey?: string
 ): Promise<ProjectData> => {
   
   try {
-    const ai = getAIClient();
+    const ai = getAIClient(customApiKey);
     
     const prompt = `
       Analyze the conversation history (and any attached file) about a business model.
@@ -234,7 +229,7 @@ export const analyzeProjectData = async (
 };
 
 export const generateExecutiveReport = async (data: ProjectData, customApiKey?: string): Promise<string> => {
-  const ai = getAIClient();
+  const ai = getAIClient(customApiKey);
   
   const prompt = `
     Generate a professional, data-driven Executive Summary Report in Markdown format based on:
@@ -250,7 +245,7 @@ export const generateExecutiveReport = async (data: ProjectData, customApiKey?: 
 };
 
 export const generateProjectVideo = async (data: ProjectData, customApiKey?: string): Promise<string> => {
-  const ai = getAIClient();
+  const ai = getAIClient(customApiKey);
   
   const visualPrompt = `Cinematic, high-quality, photorealistic video concept for a business: ${data.valueProposition}. 
   Target audience: ${data.customerSegments.join(', ')}.`;
@@ -274,11 +269,11 @@ export const generateProjectVideo = async (data: ProjectData, customApiKey?: str
   const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
   if (!downloadLink) throw new Error("Video generation failed to return a URI");
 
-  return `${downloadLink}&key=${MASTER_API_KEY}`;
+  return downloadLink;
 };
 
 export const generatePodcastScript = async (data: ProjectData, customApiKey?: string): Promise<string> => {
-    const ai = getAIClient();
+    const ai = getAIClient(customApiKey);
     const prompt = `Create a podcast script about this business data: ${JSON.stringify(data)}`;
   
     const result = await ai.models.generateContent({
